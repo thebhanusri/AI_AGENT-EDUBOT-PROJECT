@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>EduBot - Simple Web Interface</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f9f9f9; margin: 0; padding: 0; }
+    .container { max-width: 500px; margin: 40px auto; background: #fff; padding: 30px 40px; border-radius: 8px; box-shadow: 0 2px 8px #0001; }
+    h1 { text-align: center; color: #2a7ae2; }
+    select, input[type="text"], button { width: 100%; padding: 10px; margin-top: 15px; font-size: 1em; border-radius: 4px; border: 1px solid #ddd; }
+    button { background: #2a7ae2; color: #fff; border: none; cursor: pointer; }
+    button:hover { background: #185a9d; }
+    pre { background: #f4f4f4; padding: 15px; border-radius: 5px; margin-top: 20px; white-space: pre-wrap; }
+    label { margin-top: 15px; display: block; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🤖 EduBot</h1>
+    <label for="option">Choose an option:</label>
+    <select id="option" onchange="onOptionChange()">
+      <option value="">-- Select --</option>
+      <option value="1">Explain Concept</option>
+      <option value="2">Summarize Topic</option>
+      <option value="3">Ask a Question</option>
+      <option value="4">Generate MCQ</option>
+    </select>
+
+    <div id="inputDiv" style="display:none;">
+      <label id="inputLabel" for="userInput"></label>
+      <input type="text" id="userInput" placeholder="">
+    </div>
+
+    <button onclick="submitEduBot()">Submit</button>
+    <pre id="output"></pre>
+  </div>
+
+  <script>
+    const backendUrl = "http://localhost:8000"; // Change if your backend runs elsewhere
+
+    function onOptionChange() {
+      const option = document.getElementById('option').value;
+      const inputDiv = document.getElementById('inputDiv');
+      const inputLabel = document.getElementById('inputLabel');
+      const userInput = document.getElementById('userInput');
+      document.getElementById('output').textContent = '';
+      userInput.value = '';
+      if (option === "1") {
+        inputDiv.style.display = "block";
+        inputLabel.textContent = "Enter topic (e.g., OS, Data Structure):";
+        userInput.placeholder = "e.g., OS";
+      } else if (option === "3") {
+        inputDiv.style.display = "block";
+        inputLabel.textContent = "Enter your question:";
+        userInput.placeholder = "e.g., What is Python?";
+      } else {
+        inputDiv.style.display = "none";
+      }
+    }
+
+    async function submitEduBot() {
+      const option = document.getElementById('option').value;
+      const userInput = document.getElementById('userInput').value.trim();
+      const output = document.getElementById('output');
+      output.textContent = "Loading...";
+      try {
+        let response, data;
+        if (option === "1") {
+          // Explain Concept
+          response = await fetch(`${backendUrl}/explain`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ topic: userInput })
+          });
+          data = await response.json();
+          output.textContent = "📘 Explanation:\n" + data.explanation;
+        } else if (option === "2") {
+          // Summarize Topic
+          response = await fetch(`${backendUrl}/summarize`, { method: "POST" });
+          data = await response.json();
+          output.textContent = "📚 Summary:\n" + data.summary;
+        } else if (option === "3") {
+          // Ask a Question
+          response = await fetch(`${backendUrl}/ask`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ question: userInput })
+          });
+          data = await response.json();
+          output.textContent = "❓ Answer:\n" + data.answer;
+        } else if (option === "4") {
+          // Generate MCQ
+          response = await fetch(`${backendUrl}/mcq`, { method: "POST" });
+          data = await response.json();
+          let optionsText = data.options.map((opt, i) => `${i + 1}. ${opt}`).join("\n");
+          output.textContent = `📝 MCQ:\n${data.question}\n${optionsText}\n✅ Answer: ${data.answer}`;
+        } else {
+          output.textContent = "Please select an option.";
+        }
+      } catch (err) {
+        output.textContent = "Error: Could not connect to backend.";
+      }
+    }
+  </script>
+</body>
+</html>
